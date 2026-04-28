@@ -17,13 +17,20 @@ public class MainLauncher {
         AgentContainer mainContainer = rt.createMainContainer(p);
 
         try {
-            // 4. Lancer le Seller
-            AgentController seller = mainContainer.createNewAgent("Seller", "SellerAgent", null);
+            Object[] sellerArgs = new Object[] { 20000, 20000 }; // PrixDépart, PrixMin
+
+            AgentController seller = mainContainer.createNewAgent("Seller", "SellerAgent", sellerArgs);
             seller.start();
 
+
+
+            int budgetB1 = 30000; 
+            Object[] argsB1 = new Object[]{ budgetB1 };
+            int budgetB2 = 26000; 
+            Object[] argsB2 = new Object[]{ budgetB2 }; 
             // 5. Lancer les 2 Buyers
-            AgentController b1 = mainContainer.createNewAgent("Buyer1", "BuyerAgent", null);
-            AgentController b2 = mainContainer.createNewAgent("Buyer2", "BuyerAgent", null);
+            AgentController b1 = mainContainer.createNewAgent("Buyer1", "BuyerAgent", argsB1);
+            AgentController b2 = mainContainer.createNewAgent("Buyer2", "BuyerAgent", argsB2);
             b1.start();
             b2.start();
 
