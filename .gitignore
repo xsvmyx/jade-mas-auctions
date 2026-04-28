@@ -1,0 +1,14 @@
+# Compilation et binaire
+bin/
+*.class
+
+# Configuration de l'éditeur (VS Code)
+.vscode/
+
+# Fichiers temporaires JADE / Runtime
+APDescription.txt
+MTPs-Main-Container.txt
+
+# OS spécifiques
+.DS_Store
+Thumbs.db
