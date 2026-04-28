@@ -9,22 +9,27 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 
 public class SellerAgent extends Agent {
-    private int currentPrice;
-    private int minPrice;
+    private int currentPrice = 20000;
+    private int minPrice = 12000;
     private AID lastBidder = null;
     private int lastBidPrice = 0;
-    private int tentativesSansOffre = 0;
+    private int attemps = 0;
+    private int increment = 500; 
+    private int decrement = 300;
+    private int maxAttempts = 3;
 
     protected void setup() {
         // 1. Récupération des paramètres de l'enchère
         Object[] args = getArguments();
-        if (args != null && args.length >= 2) {
+        if (args != null && args.length >= 5) {
             this.currentPrice = (int) args[0];
             this.minPrice = (int) args[1];
-        } else {
-            // Valeurs par défaut si aucun argument n'est passé
-            this.currentPrice = 20000;
-            this.minPrice = 12000;
+            this.increment = (int) args[2];
+            this.decrement = (int) args[3];
+            this.maxAttempts = (int) args[4];
+            
+            
+           
         }
 
         System.out.println("Vendeur " + getLocalName() + " prêt. Prix de départ : " + currentPrice + " (Min: " + minPrice + ")");
@@ -46,8 +51,8 @@ public class SellerAgent extends Agent {
                         aRecuOffre = true;
                         lastBidder = bid.getSender();
                         lastBidPrice = offeredPrice;
-                        currentPrice = lastBidPrice + 500; // On monte le prix
-                        tentativesSansOffre = 0; // On a eu une offre, on reset le compteur !
+                        currentPrice = lastBidPrice + increment; // On monte le prix
+                        attemps = 0; // On a eu une offre, on reset le compteur !
                         System.out.println(">>> Nouveau meilleur offrant : " + lastBidder.getLocalName() + " (" + lastBidPrice + " DZD)");
                         break; 
                     }
@@ -59,18 +64,16 @@ public class SellerAgent extends Agent {
                     diffuserOffre(currentPrice);
                 } else {
                     // AUCUNE OFFRE ce tour-ci
-                    tentativesSansOffre++;
-                    System.out.println("Aucune offre (Tentative " + tentativesSansOffre + "/3)");
+                    attemps++;
+                    System.out.println("Aucune offre (Tentative " + attemps + "/" + maxAttempts + ")");
 
-                    if (tentativesSansOffre >= 3) {
-                        // Règle des 3 baisses/attentes atteinte
-                        System.out.println("Limite de tentatives atteinte sans surenchère.");
+                    if (attemps >= maxAttempts) {
                         conclureVente();
                         stop();
                     } else {
                         // On baisse un peu le prix pour tenter de relancer
                         if (currentPrice > minPrice) {
-                            currentPrice -= 100; // Baisse légère
+                            currentPrice -= decrement; 
                             if (currentPrice < minPrice) currentPrice = minPrice;
                             System.out.println("Tentative de relance au prix de : " + currentPrice);
                             diffuserOffre(currentPrice);

@@ -6,8 +6,8 @@ import jade.domain.FIPAAgentManagement.*;
 import jade.domain.FIPAException;
 
 public class BuyerAgent extends Agent {
-    private int budgetMax;
-    private double chanceDeBid = 0.7;
+    private int maxBudget = 20000;
+    private double bidChance = 0.7;
 
     
 
@@ -16,13 +16,10 @@ public class BuyerAgent extends Agent {
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
             // On récupère le budget passé au moment du createNewAgent
-            this.budgetMax = (int) args[0];
-        } else {
-            // Valeur de secours au cas où l'argument est oublié
-            this.budgetMax = (int)(Math.random() * 6000) + 13000;
-        }
-
-        System.out.println("[" + getLocalName() + "] Prêt. Budget Max: " + budgetMax + " DZD");
+            this.maxBudget = (int) args[0];
+            this.bidChance = (double) args[1];
+        } 
+        System.out.println("[" + getLocalName() + "] Prêt. Budget Max: " + maxBudget + " DZD");
 
         // 2. Inscription au DF (Annuaire)
         DFAgentDescription dfd = new DFAgentDescription();
@@ -44,8 +41,8 @@ public class BuyerAgent extends Agent {
                         int prixPropose = Integer.parseInt(msg.getContent());
                         
                         // Condition de Budget + Chance de bid (Random)
-                        if (prixPropose <= budgetMax) {
-                            if (Math.random() < chanceDeBid) {
+                        if (prixPropose <= maxBudget) {
+                            if (Math.random() < bidChance) {
                                 System.out.println("[" + getLocalName() + "] J'accepte l'offre de " + prixPropose);
                                 ACLMessage reply = msg.createReply();
                                 reply.setPerformative(ACLMessage.PROPOSE);
