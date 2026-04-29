@@ -12,7 +12,7 @@ public class BuyerAgent extends Agent {
     
 
     protected void setup() {
-        // 1. On récupère les arguments passés par le MainLauncher
+        // getting args
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
             // On récupère le budget passé au moment du createNewAgent
@@ -54,6 +54,9 @@ public class BuyerAgent extends Agent {
                         } else {
                             System.out.println("[" + getLocalName() + "] " + prixPropose + " est au dessus de mon budget.");
                         }
+                    } else if (msg.getPerformative() == ACLMessage.INFORM && "END_AUCTION".equals(msg.getContent())) {
+                        System.out.println("[" + getLocalName() + "] Fin de l'enchère reçue, je quitte la plateforme.");
+                        doDelete();
                     }
                 } else {
                     block();

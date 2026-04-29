@@ -17,9 +17,10 @@ public class SellerAgent extends Agent {
     private int increment = 500; 
     private int decrement = 300;
     private int maxAttempts = 3;
+    private int roundNumber = 0;
 
     protected void setup() {
-        // 1. Récupération des paramètres de l'enchère
+        /// getting args
         Object[] args = getArguments();
         if (args != null && args.length >= 5) {
             this.currentPrice = (int) args[0];
@@ -34,7 +35,13 @@ public class SellerAgent extends Agent {
 
         System.out.println("Vendeur " + getLocalName() + " prêt. Prix de départ : " + currentPrice + " (Min: " + minPrice + ")");
 
+        // Notify GUI of initial state
+        notifyGui("PRICE:" + currentPrice);
+        notifyGui("LOG:Vendeur prêt — Prix départ: " + currentPrice + " DZD, Min: " + minPrice + " DZD");
+
         // On commence par une première diffusion
+        roundNumber++;
+        notifyGui("ROUND:" + roundNumber);
         diffuserOffre(currentPrice);
 
         addBehaviour(new TickerBehaviour(this, 5000) { 
@@ -54,6 +61,8 @@ public class SellerAgent extends Agent {
                         currentPrice = lastBidPrice + increment; // On monte le prix
                         attemps = 0; // On a eu une offre, on reset le compteur !
                         System.out.println(">>> Nouveau meilleur offrant : " + lastBidder.getLocalName() + " (" + lastBidPrice + " DZD)");
+                        notifyGui("BEST:" + lastBidder.getLocalName() + ":" + lastBidPrice);
+                        notifyGui("PRICE:" + currentPrice);
                         break; 
                     }
                     bid = receive(mt);
@@ -61,11 +70,14 @@ public class SellerAgent extends Agent {
 
                 if (aRecuOffre) {
                     // On relance un round avec le prix augmenté
+                    roundNumber++;
+                    notifyGui("ROUND:" + roundNumber);
                     diffuserOffre(currentPrice);
                 } else {
                     // AUCUNE OFFRE ce tour-ci
                     attemps++;
                     System.out.println("Aucune offre (Tentative " + attemps + "/" + maxAttempts + ")");
+                    notifyGui("ATTEMPT:" + attemps + "/" + maxAttempts);
 
                     if (attemps >= maxAttempts) {
                         conclureVente();
@@ -76,6 +88,10 @@ public class SellerAgent extends Agent {
                             currentPrice -= decrement; 
                             if (currentPrice < minPrice) currentPrice = minPrice;
                             System.out.println("Tentative de relance au prix de : " + currentPrice);
+                            notifyGui("PRICE:" + currentPrice);
+                            notifyGui("LOG:Relance au prix de " + currentPrice + " DZD");
+                            roundNumber++;
+                            notifyGui("ROUND:" + roundNumber);
                             diffuserOffre(currentPrice);
                         } else {
                             // Si on est déjà au prix min et que ça ne répond pas
@@ -115,15 +131,46 @@ public class SellerAgent extends Agent {
         if (lastBidder != null) {
             System.out.println("ADJUGÉ ! Vendu à : " + lastBidder.getLocalName());
             System.out.println("Prix final : " + lastBidPrice + " DZD");
+            notifyGui("FINAL:" + lastBidder.getLocalName() + " (" + lastBidPrice + " DZD)");
         } else {
             System.out.println("FIN DE L'ENCHÈRE : Aucun acheteur trouvé.");
+            notifyGui("FINAL:aucun");
         }
         System.out.println("==============================================\n");
+
+        // Informer les acheteurs de la fin pour qu'ils quittent la plateforme
+        try {
+            DFAgentDescription template = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType("auction-bidder");
+            template.addServices(sd);
+            DFAgentDescription[] result = DFService.search(this, template);
+            if (result.length > 0) {
+                ACLMessage endMsg = new ACLMessage(ACLMessage.INFORM);
+                endMsg.setContent("END_AUCTION");
+                for (DFAgentDescription agent : result) {
+                    endMsg.addReceiver(agent.getName());
+                }
+                send(endMsg);
+            }
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+
         doDelete();
     }
 
+    /**
+     * Send an INFORM message to the GuiAgent for real-time UI updates.
+     */
+    private void notifyGui(String content) {
+        ACLMessage info = new ACLMessage(ACLMessage.INFORM);
+        info.addReceiver(new AID("GuiAgent", AID.ISLOCALNAME));
+        info.setContent(content);
+        send(info);
+    }
+
     protected void takeDown() {
-        // Pas de deregister ici car le Seller n'était pas inscrit (il cherchait juste)
         System.out.println("Agent Vendeur " + getLocalName() + " quitte la plateforme.");
     }
 }
